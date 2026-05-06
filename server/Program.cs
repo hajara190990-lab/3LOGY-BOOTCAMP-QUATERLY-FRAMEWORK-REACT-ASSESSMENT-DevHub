@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 //Add Ef core plus SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=devshelf.db"));
+    options.UseSqlite("Data Source=devshelf.db;Foreign Keys=True"));
 
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AuthService>();

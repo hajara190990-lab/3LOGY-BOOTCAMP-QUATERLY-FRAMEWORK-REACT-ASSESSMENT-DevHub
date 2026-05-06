@@ -83,6 +83,11 @@ public class SnippetsController : ControllerBase
     {
         var userId = GetUserId();
 
+        // Verify user exists in database
+        var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+        if (!userExists)
+            return Unauthorized(new { error = "User not found. Please log in again." });
+
         var snippet = new Snippet
         {
             Id = Guid.NewGuid(),

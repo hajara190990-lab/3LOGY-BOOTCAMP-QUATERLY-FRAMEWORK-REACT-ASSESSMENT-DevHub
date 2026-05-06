@@ -84,6 +84,11 @@ public class TasksController : ControllerBase
     {
         var userId = GetUserId();
 
+        // Verify user exists in database
+        var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+        if (!userExists)
+            return Unauthorized(new { error = "User not found. Please log in again." });
+
         var task = new DevTask
         {
             Id = Guid.NewGuid(),
