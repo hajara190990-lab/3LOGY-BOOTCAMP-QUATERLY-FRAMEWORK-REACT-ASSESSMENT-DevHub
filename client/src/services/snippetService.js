@@ -1,23 +1,48 @@
 import api from './api';
 
 const getAll = async () => {
-  const response = await api.get('/api/snippets');
-  return response.data;
+  try {
+    const response = await api.get('/api/snippets');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to fetch snippets' };
+  }
 };
 
-const create = async (snippetData) => {
-  // snippetData: { title, language, content, description, tags }
-  const response = await api.post('/api/snippets', snippetData);
-  return response.data;
+const getById = async (id) => {
+  try {
+    const response = await api.get(`/api/snippets/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to fetch snippet' };
+  }
 };
 
-const update = async (id, snippetData) => {
-  const response = await api.put(`/api/snippets/${id}`, snippetData);
-  return response.data;
+const create = async (data) => {
+  try {
+    const response = await api.post('/api/snippets', data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to create snippet' };
+  }
+};
+
+const update = async (id, data) => {
+  try {
+    const response = await api.put(`/api/snippets/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to update snippet' };
+  }
 };
 
 const remove = async (id) => {
-  await api.delete(`/api/snippets/${id}`);
+  try {
+    const response = await api.delete(`/api/snippets/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to delete snippet' };
+  }
 };
 
-export default { getAll, create, update, remove };
+export default { getAll, getById, create, update, remove };

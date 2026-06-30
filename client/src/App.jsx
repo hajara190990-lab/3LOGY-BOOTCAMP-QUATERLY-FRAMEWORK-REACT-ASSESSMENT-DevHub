@@ -1,61 +1,39 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
-
-// Components & Guard
+import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import Sidebar from './components/Sidebar';
 
-// Pages
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RefisterPage';
+import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import SnippetsPage from './pages/SnippetsPage';
-import TasksPage from './pages/TasksPage';
+import SnippetDetailPage from './pages/SnippetDetailPage';
 import ResourcesPage from './pages/ResourcesPage';
+import TasksPage from './pages/TasksPage';
 
-// A small sub-layout to keep the Main UI logic separate
-const AppLayout = ({ children }) => (
-  <div className="flex">
-    <Sidebar />
-    <main className="flex-1 bg-gray-50 min-h-screen">
-      {children}
-    </main>
-  </div>
-);
-
-function App() {
+const App = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Toaster position="top-right" reverseOrder={false} />
-        
-        <Routes>
-          {/* Public Authentication Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          
-          {/* Protected Application Routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute><AppLayout><DashboardPage /></AppLayout></ProtectedRoute>
-          } />
-          <Route path="/snippets" element={
-            <ProtectedRoute><AppLayout><SnippetsPage /></AppLayout></ProtectedRoute>
-          } />
-          <Route path="/tasks" element={
-            <ProtectedRoute><AppLayout><TasksPage /></AppLayout></ProtectedRoute>
-          } />
-          <Route path="/resources" element={
-            <ProtectedRoute><AppLayout><ResourcesPage /></AppLayout></ProtectedRoute>
-          } />
-
-          {/* Root/Default Redirects */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <div className="min-h-screen bg-[#0f0e1a]">
+          <Navbar />
+          <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/snippets" element={<ProtectedRoute><SnippetsPage /></ProtectedRoute>} />
+            <Route path="/snippets/:id" element={<ProtectedRoute><SnippetDetailPage /></ProtectedRoute>} />
+            <Route path="/resources" element={<ProtectedRoute><ResourcesPage /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </div>
       </AuthProvider>
     </BrowserRouter>
   );
-}
+};
 
 export default App;

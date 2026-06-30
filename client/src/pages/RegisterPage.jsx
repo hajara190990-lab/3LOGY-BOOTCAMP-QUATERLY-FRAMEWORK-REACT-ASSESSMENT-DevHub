@@ -3,10 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const LoginPage = () => {
-  const { login, isLoading } = useContext(AuthContext);
+const RegisterPage = () => {
+  const { register } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ userName: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -17,9 +17,12 @@ const LoginPage = () => {
 
   const validate = () => {
     const newErrors = {};
+    if (!formData.userName) newErrors.userName = 'Username is required';
+    else if (formData.userName.length < 3) newErrors.userName = 'Username must be at least 3 characters';
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Enter a valid email';
     if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
     return newErrors;
   };
 
@@ -32,11 +35,11 @@ const LoginPage = () => {
     }
     try {
       setSubmitting(true);
-      await login(formData.email, formData.password);
-      toast.success('Welcome back!');
-      navigate('/dashboard');
+      await register(formData.userName, formData.email, formData.password);
+      toast.success('Account created! Please sign in.');
+      navigate('/login');
     } catch (err) {
-      const message = err?.error || err?.message || 'Invalid email or password';
+      const message = err?.error || err?.message || 'Registration failed';
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -53,9 +56,24 @@ const LoginPage = () => {
         </div>
 
         <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Create an account</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input
+                type="text"
+                name="userName"
+                value={formData.userName}
+                onChange={handleChange}
+                placeholder="yourname"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  errors.userName ? 'border-red-400' : 'border-gray-300'
+                }`}
+              />
+              {errors.userName && <p className="text-red-500 text-xs mt-1">{errors.userName}</p>}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
@@ -78,7 +96,7 @@ const LoginPage = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="••••••••"
+                placeholder="Min. 6 characters"
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                   errors.password ? 'border-red-400' : 'border-gray-300'
                 }`}
@@ -88,17 +106,17 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              disabled={submitting || isLoading}
+              disabled={submitting}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-medium py-2 rounded-lg transition-colors text-sm"
             >
-              {submitting ? 'Signing in...' : 'Sign in'}
+              {submitting ? 'Creating account...' : 'Create account'}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-indigo-600 hover:underline font-medium">
-              Create one
+            Already have an account?{' '}
+            <Link to="/login" className="text-indigo-600 hover:underline font-medium">
+              Sign in
             </Link>
           </p>
         </div>
@@ -107,4 +125,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;

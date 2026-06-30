@@ -1,23 +1,57 @@
 import api from './api';
 
 const getAll = async () => {
-  const response = await api.get('/api/tasks');
-  return response.data;
+  try {
+    const response = await api.get('/api/tasks');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to fetch tasks' };
+  }
 };
 
-const create = async (taskData) => {
-  // taskData: { title, description, priority (0=Low, 1=Med, 2=High) }
-  const response = await api.post('/api/tasks', taskData);
-  return response.data;
+const getById = async (id) => {
+  try {
+    const response = await api.get(`/api/tasks/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to fetch task' };
+  }
 };
 
-const toggleStatus = async (id) => {
-  const response = await api.patch(`/api/tasks/${id}/toggle`);
-  return response.data;
+const create = async (data) => {
+  try {
+    const response = await api.post('/api/tasks', data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to create task' };
+  }
+};
+
+const update = async (id, data) => {
+  try {
+    const response = await api.put(`/api/tasks/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to update task' };
+  }
 };
 
 const remove = async (id) => {
-  await api.delete(`/api/tasks/${id}`);
+  try {
+    const response = await api.delete(`/api/tasks/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to delete task' };
+  }
 };
 
-export default { getAll, create, toggleStatus, remove };
+const updateStatus = async (id, status) => {
+  try {
+    const response = await api.patch(`/api/tasks/${id}/status`, { status });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Failed to update task status' };
+  }
+};
+
+export default { getAll, getById, create, update, remove, updateStatus };

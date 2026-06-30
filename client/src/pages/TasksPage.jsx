@@ -1,93 +1,184 @@
 import { useState, useEffect } from 'react';
 import taskService from '../services/taskService';
-import { toast } from 'react-hot-toast';
+import TaskCard from '../components/TaskCard';
+import TaskForm from '../components/TaskForm';
+import toast from 'react-hot-toast';
+
+const FILTERS = ['all', 'todo', 'in-progress', 'done'];
+const FILTER_LABELS = { all: 'All', todo: 'Todo', 'in-progress': 'In Progress', done: 'Done' };
 
 const TasksPage = () => {
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  
 
   const fetchTasks = async () => {
     try {
+      setIsLoading(true);
       const data = await taskService.getAll();
       setTasks(data);
-    } catch (err) {
-      toast.error("Could not load tasks");
+    } catch {
+      setError('Failed to load tasks');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
+  useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  fetchTasks();
+}, []);
 
-  const handleToggle = async (id) => {
+  const handleCreate = async (data) => {
     try {
-      await taskService.toggleStatus(id);
-      setTasks(tasks.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t));
-    } catch (err) {
-      toast.error("Failed to update task");
+      setFormLoading(true);
+      const newTask = await taskService.create(data);
+      setTasks([newTask, ...tasks]);
+      setShowForm(false);
+      toast.success('Task created');
+    } catch  {
+      toast.error('Failed to create task');
+    } finally {
+      setFormLoading(false);
     }
   };
 
-  const getPriorityStyle = (priority) => {
-    switch (priority) {
-      case 2: return "bg-red-100 text-red-700 border-red-200"; // High
-      case 1: return "bg-yellow-100 text-yellow-700 border-yellow-200"; // Medium
-      default: return "bg-blue-100 text-blue-700 border-blue-200"; // Low
+  const handleUpdate = async (data) => {
+    try {
+      setFormLoading(true);
+      const updated = await taskService.update(editingTask.id, data);
+      setTasks(tasks.map((t) => (t.id === editingTask.id ? updated : t)));
+      setEditingTask(null);
+      setShowForm(false);
+      toast.success('Task updated');
+    } catch  {
+      toast.error('Failed to update task');
+    } finally {
+      setFormLoading(false);
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading your list...</div>;
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this task?')) return;
+    try {
+      await taskService.remove(id);
+      setTasks(tasks.filter((t) => t.id !== id));
+      toast.success('Task deleted');
+    } catch  {
+      toast.error('Failed to delete task');
+    }
+  };
+
+  const handleStatusChange = async (id, status) => {
+    try {
+      const updated = await taskService.updateStatus(id, status);
+      setTasks(tasks.map((t) => (t.id === id ? updated : t)));
+      toast.success('Status updated');
+    } catch  {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleEdit = (task) => {
+    setEditingTask(task);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingTask(null);
+  };
+
+  const filteredTasks =
+    activeFilter === 'all' ? tasks : tasks.filter((t) => t.status === activeFilter);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Developer Tasks</h1>
-        <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-          + Add Task
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {tasks.map(task => (
-          <div 
-            key={task.id} 
-            className={`flex items-center justify-between p-4 bg-white border rounded-xl shadow-sm transition ${task.isCompleted ? 'opacity-60' : ''}`}
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Tasks</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Track what you're working on</p>
+        </div>
+        {!showForm && (
+          <button
+            onClick={() => { setShowForm(true); setEditingTask(null); }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            <div className="flex items-center space-x-4">
-              <input 
-                type="checkbox" 
-                checked={task.isCompleted}
-                onChange={() => handleToggle(task.id)}
-                className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <div>
-                <h3 className={`font-semibold ${task.isCompleted ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                  {task.title}
-                </h3>
-                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${getPriorityStyle(task.priority)}`}>
-                  {task.priority === 2 ? 'High' : task.priority === 1 ? 'Medium' : 'Low'}
-                </span>
-              </div>
-            </div>
-            
-            <button 
-              onClick={async () => {
-                await taskService.remove(task.id);
-                setTasks(tasks.filter(t => t.id !== task.id));
-                toast.success("Task removed");
-              }}
-              className="text-gray-400 hover:text-red-500 px-2"
-            >
-              &times;
-            </button>
-          </div>
-        ))}
-        {tasks.length === 0 && (
-          <p className="text-center text-gray-500 py-10">No tasks found. Time to relax?</p>
+            + New Task
+          </button>
         )}
       </div>
+
+      {showForm && (
+        <TaskForm
+          initialData={editingTask}
+          onSubmit={editingTask ? handleUpdate : handleCreate}
+          onCancel={handleCancel}
+          isLoading={formLoading}
+        />
+      )}
+
+      <div className="flex gap-1 mb-6 bg-[#1a1929] p-1 rounded-lg w-fit">
+        {FILTERS.map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setActiveFilter(filter)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              activeFilter === filter
+                ? 'bg-white/10 text-white'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            {FILTER_LABELS[filter]}
+            {filter !== 'all' && (
+              <span className="ml-1.5 text-xs text-gray-500">
+                ({tasks.filter((t) => t.status === filter).length})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-16">
+          <p className="text-red-400">{error}</p>
+          <button onClick={fetchTasks} className="mt-3 text-indigo-400 text-sm hover:underline">
+            Try again
+          </button>
+        </div>
+      ) : filteredTasks.length === 0 ? (
+        <div className="text-center py-16 bg-[#1a1929] border border-dashed border-white/10 rounded-xl">
+          <p className="text-4xl mb-3">✅</p>
+          <p className="text-gray-300 font-medium">
+            {activeFilter === 'all' ? 'No tasks yet' : `No ${FILTER_LABELS[activeFilter]} tasks`}
+          </p>
+          <p className="text-gray-500 text-sm mt-1">
+            {activeFilter === 'all' ? 'Create your first task to get started' : 'Try a different filter'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onEdit={() => handleEdit(task)}
+              onDelete={() => handleDelete(task.id)}
+              onStatusChange={handleStatusChange}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

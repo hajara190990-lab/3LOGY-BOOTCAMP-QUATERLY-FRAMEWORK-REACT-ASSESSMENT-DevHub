@@ -1,56 +1,70 @@
-import { createContext, useState, useEffect, useMemo } from "react";
-import authService from "../services/authService";
+import { createContext, useState, useEffect } from 'react';
+import authService from '../services/authService';
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+ 
 
-  // Initialize: Check for existing session
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const isAuthenticated = !!user.id;
+
   useEffect(() => {
-    const initAuth = async () => {
-      const token = authService.getToken();
-      if (token) {
-        try {
+    const restoreSession = async () => {
+      try {
+        const token = authService.getToken();
+        if (token) {
           const profile = await authService.getProfile();
           setUser(profile);
-        } catch (err) {
-          authService.logout(); // Token likely expired
         }
+      } catch  {
+        authService.logout();
+        setUser({});
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
-    initAuth();
+    restoreSession();
   }, []);
 
   const login = async (email, password) => {
-    const userData = await authService.login(email, password);
-    setUser(userData);
+    try {
+      setError(null);
+      const data = await authService.login(email, password);
+      setUser(data);
+      return data;
+    } catch (err) {
+      const message = err?.error || err?.message || 'Login failed';
+      setError(message);
+      throw err;
+    }
   };
 
   const register = async (userName, email, password) => {
-    return await authService.register(userName, email, password);
+    try {
+      setError(null);
+      const data = await authService.register(userName, email, password);
+      return data;
+    } catch (err) {
+      const message = err?.error || err?.message || 'Registration failed';
+      setError(message);
+      throw err;
+    }
   };
 
   const logout = () => {
     authService.logout();
-    setUser(null);
+    setUser({});
   };
 
-  // useMemo prevents unnecessary re-renders of the entire app
-  const value = useMemo(() => ({
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    login,
-    register,
-    logout
-  }), [user, isLoading]);
+  const value = { user, isLoading, error, isAuthenticated, login, register, logout };
 
   return (
     <AuthContext.Provider value={value}>
-      {!isLoading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
